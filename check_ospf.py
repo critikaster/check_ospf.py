@@ -57,7 +57,8 @@ def check_ospf(snmp_check_values):
     }
 
     ### DEBUG OUTPUT
-    if snmp_check_values['debug'] == True:
+
+    if snmp_check_values['debug']:
         print('\n // DEBUG snmp_check_values\n')
         for key,value in sorted(snmp_check_values.items()):
             print(' {:20} {}'.format(key, value))
@@ -114,7 +115,6 @@ def check_ospf(snmp_check_values):
 
     try:
 
-
         # Parse snmpwalk output to lists
 
         # Parse command output: OSPF neighbor router interface IP's
@@ -135,7 +135,8 @@ def check_ospf(snmp_check_values):
         for item in command_output_ospf_ip_list:
             # If you try to use this plugin on a non-Cisco IOS router this happens
             if 'No Such Object available on this agent at this OID' in item:
-                msg = 'SNMP OID not found: 1.3.6.1.2.1.14.10.1.1 (ospfNbrIpAddr). Are you sure this is a Cisco IOS router?'
+                msg = 'SNMP OID not found: 1.3.6.1.2.1.14.10.1.1 (ospfNbrIpAddr). \
+                Are you sure this is a Cisco IOS router?'
                 error(msg)
             # Start building dictionary
             neighbor_name = 'Neighbor' + str(count).zfill(2)
@@ -150,12 +151,12 @@ def check_ospf(snmp_check_values):
 
         for item in command_output_ospf_rid_list:
             # Add to dictionary:
-            # Match previously acquired ip_address to snmp_oid_id_ospfNbrRtrId, get current key and RID, save RID to current key
+            # Match previously acquired ip_address to snmp_oid_id_ospfNbrRtrId ..
+            # .. get current key and RID, save RID to current key
             chunks = item.split()
             if len(chunks) == 4:
                 snmp_oid_id_ospfNbrRtrId = chunks[0]
                 rtr_id = chunks[3]
-                # Search for ip_address in snmp_oid_id_ospfNbrRtrId
                 for key, value in ospf_neighbor_data.items():
                     ip_address = value[1]
                     # Look for the IP address string in the snmp_oid_id_ospfNbrRtrId string, which could look like:
@@ -164,8 +165,6 @@ def check_ospf(snmp_check_values):
                     # 1.3.6.1.2.1.14.10.1.1.172.29.244.30.0
                     result = re.search(ip_address, snmp_oid_id_ospfNbrRtrId)
                     if result:
-                        # Current contents of dictionary are:
-                        # Key = NeighborX, Value = [snmp_oid_ospfNbrIpAddr, ip_address, rtr_id)
                         ospf_neighbor_data[key].append('RID')
                         ospf_neighbor_data[key].append(rtr_id)
 
@@ -184,7 +183,8 @@ def check_ospf(snmp_check_values):
                         ospf_neighbor_data[key].append(neighbor_state)
 
         ### DEBUG OUTPUT
-        if snmp_check_values['debug'] == True:
+
+        if snmp_check_values['debug']:
 
             print('\n // DEBUG ospf_neighbor_data\n')
             print(' {:15}  {}'.format('Name', 'Data'))
@@ -215,10 +215,12 @@ def check_ospf(snmp_check_values):
                 if snmp_check_values['rid'] in item and idx == 3:
                     # Check for OSPF state 2WAY or FULL
                     if value[5] == '4' or value[5] == '8':
-                        msg = 'Found OSPF neighbor with RID ' + snmp_check_values['rid'] + ' and state ' + ospf_states[int(value[5])] + ' | ospf_rid_found=1'
+                        msg = 'Found OSPF neighbor with RID ' + snmp_check_values['rid'] + ' and state ' \
+                              + ospf_states[int(value[5])] + ' | ospf_rid_found=1'
                         ok(msg)
                     else:
-                        msg = 'Found OSPF neighbor with RID ' + snmp_check_values['rid'] + ' but neighbor state is ' + ospf_states[int(value[5])] + ' | ospf_rid_found=0'
+                        msg = 'Found OSPF neighbor with RID ' + snmp_check_values['rid'] + ' but neighbor state is ' \
+                              + ospf_states[int(value[5])] + ' | ospf_rid_found=0'
                         critical(msg)
 
         msg = 'OSPF neighbor not found: ' + snmp_check_values['rid'] + ' | ospf_rid_found=0'
@@ -252,10 +254,12 @@ def check_ospf(snmp_check_values):
                     if snmp_check_values['ip_address'] in item and idx == 1:
                         # Check for OSPF state 2WAY or FULL
                         if value[5] == '4' or value[5] == '8':
-                            msg = 'Found OSPF neighbor with IP ' + snmp_check_values['ip_address'] + ' and state ' + ospf_states[int(value[5])] + ' | ospf_neighbor_ip_found=1'
+                            msg = 'Found OSPF neighbor with IP ' + snmp_check_values['ip_address'] + ' and state ' + \
+                                  ospf_states[int(value[5])] + ' | ospf_neighbor_ip_found=1'
                             ok(msg)
                         else:
-                            msg = 'Found OSPF neighbor with IP ' + snmp_check_values['ip_address'] + ' and state ' + ospf_states[int(value[5])] + ' | ospf_neighbor_ip_found=1'
+                            msg = 'Found OSPF neighbor with IP ' + snmp_check_values['ip_address'] + ' and state ' + \
+                                  ospf_states[int(value[5])] + ' | ospf_neighbor_ip_found=1'
 
             msg = 'OSPF neighbor IP not found: ' + snmp_check_values['ip_address'] + ' | ospf_neighbor_ip_found=0'
             critical(msg)
@@ -278,18 +282,23 @@ def check_ospf(snmp_check_values):
 
                     # If not 2WAY or FULL create warning message
                     if not value[5] == '4' and not value[5] == '8':
-                        warning_msg = 'OSPF neigbor IP ' + value[1] + ' and RID ' + value[3] + ' has state ' + ospf_states[int(value[5])]
+                        warning_msg = 'OSPF neigbor IP ' + value[1] + ' and RID ' + value[3] + ' has state ' + \
+                                      ospf_states[int(value[5])]
                         ospf_neighbor_states_warning.append(warning_msg)
                     # If any warning was detected, generate warning output
                     if ospf_neighbor_states_warning:
                         warning(warning_msg)
 
                 # No warnings detected
-                msg = str(ospf_neighbors_checked) + ' OSPF neighbors detected (Required: ' + str(snmp_check_values['min_neighbors']) +') | ' + 'ospf_neighbors_checked=' + str(ospf_neighbors_checked)
+                msg = str(ospf_neighbors_checked) + ' OSPF neighbors detected (Required: ' + \
+                      str(snmp_check_values['min_neighbors']) +') | ' + 'ospf_neighbors_checked=' + \
+                      str(ospf_neighbors_checked)
                 ok(msg)
 
             if snmp_check_values['min_neighbors'] > ospf_neighbors_checked:
-                msg = str(ospf_neighbors_checked) + ' OSPF neighbors detected (Required: ' + str(snmp_check_values['min_neighbors']) +') | ' + 'ospf_neighbors_checked=' + str(ospf_neighbors_checked)
+                msg = str(ospf_neighbors_checked) + ' OSPF neighbors detected (Required: ' + \
+                      str(snmp_check_values['min_neighbors']) +') | ' + 'ospf_neighbors_checked=' + \
+                      str(ospf_neighbors_checked)
                 critical(msg)
 
         # Default behaviour follows: if any neighbor was found, rejoice ..
@@ -311,7 +320,8 @@ def check_ospf(snmp_check_values):
                         # If encountered before, add separator // to string
                         if msg_ospf_state_warning:
                             msg_ospf_state_warning += ' // '
-                        warning_msg = 'OSPF neigbor IP ' + value[1] + ' and RID ' + value[3] + ' has state ' + ospf_states[int(value[5])]
+                        warning_msg = 'OSPF neigbor IP ' + value[1] + ' and RID ' + value[3] + ' has state ' + \
+                                      ospf_states[int(value[5])]
                         msg_ospf_state_warning += warning_msg
                         ospf_neighbors_down += 1
 
@@ -322,10 +332,11 @@ def check_ospf(snmp_check_values):
                 # If not 2WAY or FULL create warning message ..
                 if not value[5] == '4' and not value[5] == '8':
 
-                    # If encountered before, add separator
+                    # If encountered before, add separator  // to string
                     if msg_ospf_state_warning:
                         msg_ospf_state_warning += ' // '
-                    warning_msg = 'OSPF neigbor IP ' + value[1] + ' and RID ' + value[3] + ' has state ' + ospf_states[int(value[5])]
+                    warning_msg = 'OSPF neigbor IP ' + value[1] + ' and RID ' + value[3] + ' has state ' + \
+                                  ospf_states[int(value[5])]
                     msg_ospf_state_warning += warning_msg
                     ospf_neighbors_down += 1
 
@@ -334,11 +345,13 @@ def check_ospf(snmp_check_values):
 
         # If any warning was detected, generate warning output
         if msg_ospf_state_warning:
-            msg = msg_ospf_state_warning + ' | ospf_neighbors_evaluated=' + str(ospf_neighbors_evaluated - ospf_neighbors_down)
+            msg = msg_ospf_state_warning + ' | ospf_neighbors_evaluated=' + \
+                  str(ospf_neighbors_evaluated - ospf_neighbors_down)
             warning(msg)
 
         # No warnings detected
-        msg = str(ospf_neighbors_evaluated) + ' OSPF neighbors detected | ospf_neighbors_evaluated=' + str(ospf_neighbors_evaluated)
+        msg = str(ospf_neighbors_evaluated) + ' OSPF neighbors detected | ospf_neighbors_evaluated=' + \
+              str(ospf_neighbors_evaluated)
         ok(msg)
 
     else:
@@ -394,7 +407,6 @@ def main():
     if args.number:
         snmp_check_values['min_neighbors'] = args.number
 
-
     # Check OSPF status
     check_ospf(snmp_check_values)
 
@@ -425,8 +437,4 @@ if __name__ == '__main__':
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and documentation are those
-# of the authors and should not be interpreted as representing official policies,
-# either expressed or implied, of the FreeBSD Project.
 
