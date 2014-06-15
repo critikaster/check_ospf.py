@@ -20,7 +20,6 @@ __author__ = 'raoul@node00.nl'
 import sys
 import argparse
 import subprocess
-import traceback
 import re
 
 
@@ -309,7 +308,6 @@ def check_ospf(snmp_check_values):
 
     # On all other exceptions quit with a traceback and error
     except:
-        traceback.print_exc(file=sys.stdout)
         msg = 'Something went wrong parsing data. Probably wrong SNMP OID for this device.'
         error(msg)
 
@@ -357,9 +355,7 @@ def main():
 
     # RID set?
     if args.rid:
-
         rid_list = [args.rid]
-
         # Check if multiple RID's are given
         if ',' in args.rid:
             rid_list = []
@@ -374,9 +370,7 @@ def main():
 
     # Neighbor IP set?
     if args.ip:
-
         ip_address_list = [args.ip]
-
         # Check if multiple IP's are given
         if ',' in args.ip:
             ip_address_list = []
