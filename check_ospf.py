@@ -306,7 +306,7 @@ def check_ospf(snmp_check_values):
     except SystemExit:
         raise
 
-    # On all other exceptions quit with a traceback and error
+    # On all other exceptions quit with an error
     except:
         msg = 'Something went wrong parsing data. Probably wrong SNMP OID for this device.'
         error(msg)
