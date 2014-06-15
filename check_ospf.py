@@ -11,10 +11,9 @@
 
         In case multiple IP\'s or RID\'s are provided, a WARNING is generated if any of them is not 2WAY or FULL.
         If you set both IP\'s and RID\'s, only the IP\'s will be checked.
-
 '''
 
-__version__ = 'v0.2'
+__version__ = 'v0.21'
 __author__ = 'raoul@node00.nl'
 
 import sys
@@ -69,10 +68,10 @@ def check_ospf(snmp_check_values):
     if snmp_check_values['debug']:
         print('\n // DEBUG snmp_check_values\n')
         for key,value in sorted(snmp_check_values.items()):
-            print(' {:20} {}'.format(key, value))
+            print(' {key:20} {value}'.format(**locals()))
         print('\n // DEBUG ospf_states\n')
         for key, value in sorted(ospf_states.items()):
-            print(' {}: {}'.format(key, value))
+            print(' {key}: {value}'.format(**locals()))
 
     ### GET DATA
 
@@ -186,7 +185,7 @@ def check_ospf(snmp_check_values):
             print(' {:15}  {}'.format('Name', 'Data'))
             print(' {:15}  {}'.format('-----', '-------------------------'))
             for key, value in sorted(ospf_neighbor_data.items()):
-                print(' {:15} {}'.format(key, value))
+                print(' {key:15} {value}'.format(**locals()))
             print()
 
 
@@ -198,6 +197,10 @@ def check_ospf(snmp_check_values):
         ospf_neighbors_evaluated = 0
         ospf_neighbors_total = len(ospf_neighbor_data.keys())
 
+        # Check if specified IP's/RID's are actually found
+        neighbors_found_set = set()
+        neighbors_to_check_set = set()
+
         for key, value in ospf_neighbor_data.items():
 
             current_ip = value[1]
@@ -208,8 +211,10 @@ def check_ospf(snmp_check_values):
 
             if snmp_check_values['ip']:
                 for item in snmp_check_values['ip']:
+                    neighbors_to_check_set.add(item)
                     # item is one of the IP's from user input
                     if item == current_ip:
+                        neighbors_found_set.add(item)
                         # If not 2WAY or FULL create warning message
                         if not ospf_status == 4 and not ospf_status == 8:
                             # If encountered before, add separator // to string
@@ -229,12 +234,15 @@ def check_ospf(snmp_check_values):
                             ospf_neighbors_evaluated += 1
 
 
+
             ## RID: Check for specified RID(s)
 
             elif snmp_check_values['rid']:
                 for item in snmp_check_values['rid']:
+                    neighbors_to_check_set.add(item)
                     # item is one of the IP's from user input
                     if item == current_rid:
+                        neighbors_found_set.add(item)
                         # If not 2WAY or FULL create warning message
                         if not ospf_status == 4 and not ospf_status == 8:
                             # If encountered before, add separator // to string
@@ -273,9 +281,9 @@ def check_ospf(snmp_check_values):
                     ospf_neighbors_up += 1
                     ospf_neighbors_evaluated += 1
 
-
         ### EVALUATE RESULTS AND GENERATE OUTPUT
 
+        # Spelling check
         extra_s = ''
         if ospf_neighbors_up > 1:
             extra_s = 's'
@@ -287,28 +295,36 @@ def check_ospf(snmp_check_values):
         # Perf data
         msg_perfdata = ' | ospf_neighbors=' + str(ospf_neighbors_up)
 
-        # WARNING
+        # WARNING: Warnings detected
         if msg_ospf_state_warning:
             warning(msg_ospf_state_warning + msg_totals + msg_perfdata)
 
-        # CRITICAL
+        # CRITICAL: Not all neighbours found
         if snmp_check_values['min_neighbors'] > ospf_neighbors_up:
             msg = str(ospf_neighbors_up) + ' OSPF neighbor' + extra_s + ' detected (Required: ' + \
                   str(snmp_check_values['min_neighbors']) + ')'
             critical(msg + msg_totals + msg_perfdata)
 
+        # CRITICAL: Specified neighbor not found
+        neighbors_not_found_set = neighbors_to_check_set.difference(neighbors_found_set)
+
+        if not len(neighbors_not_found_set) == 0:
+            msg = 'Could not find:'
+            for item in neighbors_not_found_set:
+                msg += ' ' + item
+            critical(msg + msg_totals + msg_perfdata)
+
         # OK
         msg = str(ospf_neighbors_up) + ' OSPF neighbor' + extra_s + ' in state 2WAY or FULL'
-
         ok(msg + msg_totals + msg_perfdata)
 
     # Catch own sys.exit in case it was called and exit gracefully
     except SystemExit:
         raise
 
-    # On all other exceptions quit with an error
+    # On all other exceptions quit with a traceback and error
     except:
-        msg = 'Something went wrong parsing data. Probably wrong SNMP OID for this device.'
+        msg = 'Something went wrong parsing data. Prolly wrong SNMP OID for this device. Unless it\'s something else.'
         error(msg)
 
 
@@ -344,7 +360,7 @@ def main():
         'ospfNbrRtrId'              : '1.3.6.1.2.1.14.10.1.3',
         'ospfNbrState'              : '1.3.6.1.2.1.14.10.1.6',
         'rid'                       : None,
-        'ip'                        : None,
+        'ip'                : None,
         'min_neighbors'             : None,
         'debug'                     : False
     }
@@ -396,28 +412,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-# Copyright (c) 2014, raoul@node00.nl
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-# list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-# this list of conditions and the following disclaimer in the documentation
-# and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
