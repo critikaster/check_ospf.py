@@ -1,6 +1,6 @@
 check_ospf.py
 =====================
-v0.21
+v0.22
 
 usage: check_ospf.py [-h] [--version] [--debug] [-r RID] [-i IP] [-n NUMBER]
                      SNMP_COMMUNITY HOST
