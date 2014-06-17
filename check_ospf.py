@@ -9,11 +9,11 @@
         Optional arguments can be passed to match a specific neighbor Router ID (RID) or interface IP to look for.
         In that case a CRITICAL will be generated if that specific neighbor is down.
 
-        In case multiple IP\'s or RID\'s are provided, a WARNING is generated if any of them is not 2WAY or FULL.
-        If you set both IP\'s and RID\'s, only the IP\'s will be checked.
+        In case multiple IP's or RID's are provided, a WARNING is generated if any of them is not 2WAY or FULL.
+        If you set both IP's and RID's, only the IP's will be checked.
 '''
 
-__version__ = 'v0.21'
+__version__ = 'v0.22'
 __author__ = 'raoul@node00.nl'
 
 import sys
@@ -150,16 +150,16 @@ def check_ospf(snmp_check_values):
             chunks = item.split()
             if len(chunks) == 4:
                 ip_address = chunks[3]
-                # Create a dictionary with 'NeighborX' as a key and relephant info as a list of values
+                # Create a dictionary with key: 'NeighborXX' and value: list of wanted info
                 ospf_neighbor_data[neighbor_name] = ['Neighbor IP', ip_address]
 
         ## Parse router ID's
 
         for item in command_output_ospf_rid_list:
-            # Match ip_address to value ospfNbrRtrId, get key, save ospfNbrRtrId to key
+            # Find matching key/value pair in dictionary, so we can add the RID's we find to the correct pair
             chunks = item.split()
             if len(chunks) == 4:
-                # Search for ip_address in ospfNbrRtrId
+                # Search for RID in ospfNbrRtrId
                 for key, value in ospf_neighbor_data.items():
                     result = re.search(value[1], chunks[0])
                     if result:
@@ -211,9 +211,11 @@ def check_ospf(snmp_check_values):
 
             if snmp_check_values['ip']:
                 for item in snmp_check_values['ip']:
+                    # Build a set of specified values
                     neighbors_to_check_set.add(item)
                     # item is one of the IP's from user input
                     if item == current_ip:
+                        # Build a set of matched values
                         neighbors_found_set.add(item)
                         # If not 2WAY or FULL create warning message
                         if not ospf_status == 4 and not ospf_status == 8:
@@ -232,8 +234,6 @@ def check_ospf(snmp_check_values):
                         if ospf_status == 4 or ospf_status == 8:
                             ospf_neighbors_up += 1
                             ospf_neighbors_evaluated += 1
-
-
 
             ## RID: Check for specified RID(s)
 
@@ -261,7 +261,6 @@ def check_ospf(snmp_check_values):
                             ospf_neighbors_up += 1
                             ospf_neighbors_evaluated += 1
 
-
             else:
                 # If not 2WAY or FULL create warning message
                 if not ospf_status == 4 and not ospf_status == 8:
@@ -283,7 +282,7 @@ def check_ospf(snmp_check_values):
 
         ### EVALUATE RESULTS AND GENERATE OUTPUT
 
-        # Spelling check
+        # Spelling is important
         extra_s = ''
         if ospf_neighbors_up > 1:
             extra_s = 's'
@@ -322,9 +321,9 @@ def check_ospf(snmp_check_values):
     except SystemExit:
         raise
 
-    # On all other exceptions quit with a traceback and error
+    # On all other exceptions quit with an error
     except:
-        msg = 'Something went wrong parsing data. Prolly wrong SNMP OID for this device. Unless it\'s something else.'
+        msg = 'Something went wrong parsing data. Probably wrong SNMP OID for this device.'
         error(msg)
 
 
@@ -360,7 +359,7 @@ def main():
         'ospfNbrRtrId'              : '1.3.6.1.2.1.14.10.1.3',
         'ospfNbrState'              : '1.3.6.1.2.1.14.10.1.6',
         'rid'                       : None,
-        'ip'                : None,
+        'ip'                        : None,
         'min_neighbors'             : None,
         'debug'                     : False
     }
@@ -384,6 +383,7 @@ def main():
 
         snmp_check_values['rid'] = rid_list
 
+
     # Neighbor IP set?
     if args.ip:
         ip_address_list = [args.ip]
@@ -399,6 +399,7 @@ def main():
 
         snmp_check_values['ip'] = ip_address_list
 
+
     # Minimum amount of OSPF neighbors set?
     if args.number:
         snmp_check_values['min_neighbors'] = args.number
@@ -412,3 +413,28 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+
+# Copyright (c) 2014, raoul@node00.nl
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice, this
+# list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
